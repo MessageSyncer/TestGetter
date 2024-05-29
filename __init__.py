@@ -1,14 +1,17 @@
 from model import *
 from util import *
+import image
 
 from datetime import datetime
 
 
-class _MockAPI():  # This class is used to mock an api. Can be safely moved.
-    def __init__(self) -> None:
+class MockAPI():  # This class is used to mock an api. Can be safely moved.
+    def __init__(self, userid, token) -> None:
         self._data = {}
+        self.userid = userid
+        self.token = token
 
-    def generate_blog(self, request_user_id):
+    def generate_blog(self):
         import random
         import string
         from datetime import datetime
@@ -19,7 +22,7 @@ class _MockAPI():  # This class is used to mock an api. Can be safely moved.
         # Get the current date and time
         now = datetime.now()
         # create content
-        content = f"This is a blog with id {id}, generated at {now}, requested by user {request_user_id}"
+        content = f"This is a blog with id {id}, generated at {now}, requested by user {self.userid}"
 
         result = {
             "id": id,
@@ -35,16 +38,13 @@ class _MockAPI():  # This class is used to mock an api. Can be safely moved.
 
         return result
 
-    def list(self, request_user_id, token, mock_new_book_count=2):
+    def list(self, mock_new_book_count=2):
         """return blog id list"""
-        return [self.generate_blog(request_user_id)['id'] for i in range(mock_new_book_count)]
+        return [self.generate_blog()['id'] for i in range(mock_new_book_count)]
 
-    def detail(self, request_user_id, token, id):
+    def detail(self, id):
         """return blog detail by id"""
         return self._data[id]
-
-
-_mockapi = _MockAPI()
 
 
 @dataclass
@@ -64,18 +64,21 @@ class TestGetterInstanceConfig(GetterInstanceConfig):  # Config of an instance
 
 
 class TestGetter(Getter[TestGetterConfig, TestGetterInstanceConfig]):
-    async def list(self) -> list[str]:
-        # Return list of message id.
-
-        self.logger  # self.logger
+    def __init__(self, id=None) -> None:
+        super().__init__(id)  # you must call super().__init__ then you can add your code
 
         # self.id is the unique id for adapter to indentify an instance.
         # You can use self.instance_config, self.config to access configs.
-        return _mockapi.list(self.id, self.instance_config.token, self.config.get_list_option.count)
+        self.api = MockAPI(self.id, self.instance_config.token)
+        self.logger.info(f'{self.id} inited')
+
+    async def list(self) -> list[str]:
+        # Return list of message id.
+        return self.api.list(self.config.get_list_option.count)
 
     async def detail(self, id: str) -> GetResult:
         # Return detail of message.
-        detail = _mockapi.detail(self.id, self.instance_config.token, id)
+        detail = self.api.detail(id)
 
         content = Struct.template1(
             content=detail['content'],
@@ -83,7 +86,7 @@ class TestGetter(Getter[TestGetterConfig, TestGetterInstanceConfig]):
             title='Test Title',
             url=detail['url'],
             username='Test User',
-            images=detail['picture'],
+            images=await image.download_list(detail['picture']), # You can use this builtin method to download pic easily
             ip='',
             detail=''
         )  # Framework provides builtin templates.
