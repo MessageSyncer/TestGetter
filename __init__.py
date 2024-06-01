@@ -64,6 +64,10 @@ class TestGetterInstanceConfig(GetterInstanceConfig):  # Config of an instance
 
 
 class TestGetter(Getter[TestGetterConfig, TestGetterInstanceConfig]):
+    # This is your adapter.
+    # You should not write any logic to handle errors to avoid a function failing to return.
+    # Framework will do it.
+
     def __init__(self, id=None) -> None:
         super().__init__(id)  # you must call super().__init__ then you can add your code
 
@@ -86,7 +90,7 @@ class TestGetter(Getter[TestGetterConfig, TestGetterInstanceConfig]):
             title='Test Title',
             url=detail['url'],
             username='Test User',
-            images=await image.download_list(detail['picture']), # You can use this builtin method to download pic easily
+            images=await image.download_list(detail['picture']),  # You can use this builtin method to download pic easily
             ip='',
             detail=''
         )  # Framework provides builtin templates.
@@ -95,5 +99,5 @@ class TestGetter(Getter[TestGetterConfig, TestGetterInstanceConfig]):
         return GetResult(user_id=detail['userid'], ts=detail['ts'], content=content)
 
     async def details(self, ids: List[str]) -> GetResult:
-        # Complate this method to support merge multiple blogs into one blog
+        # Complete this method to support merge multiple blogs into one blog
         raise NotImplementedError()
