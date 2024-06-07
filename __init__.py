@@ -1,5 +1,4 @@
 from model import *
-from util import *
 import image
 
 from datetime import datetime
