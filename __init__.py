@@ -1,14 +1,16 @@
 from model import *
 import image
+import time
 
 from datetime import datetime
 
 
 class MockAPI():  # This class is used to mock an api. Can be safely moved.
-    def __init__(self, userid, token) -> None:
+    def __init__(self, userid, token, delay) -> None:
         self._data = {}
         self.userid = userid
         self.token = token
+        self.delay = delay
 
     def generate_blog(self):
         import random
@@ -39,10 +41,12 @@ class MockAPI():  # This class is used to mock an api. Can be safely moved.
 
     def list(self, mock_new_book_count=2):
         """return blog id list"""
+        time.sleep(self.delay)
         return [self.generate_blog()['id'] for i in range(mock_new_book_count)]
 
     def detail(self, id):
         """return blog detail by id"""
+        time.sleep(self.delay)
         return self._data[id]
 
 
@@ -55,6 +59,7 @@ class GetListOption:
 class TestGetterConfig(GetterConfig):  # Config of the adapter
     trigger: list[str] = field(default_factory=lambda: ['* * * * * */10'])  # override this field to specify triggers
     get_list_option: GetListOption = field(default_factory=GetListOption)
+    mockapi_delay: int = 2
 
 
 @dataclass
@@ -72,7 +77,7 @@ class TestGetter(Getter[TestGetterConfig, TestGetterInstanceConfig]):
 
         # self.id is the unique id for adapter to indentify an instance.
         # You can use self.instance_config, self.config to access configs.
-        self.api = MockAPI(self.id, self.instance_config.token)
+        self.api = MockAPI(self.id, self.instance_config.token, self.config.mockapi_delay)
         self.logger.info(f'{self.id} inited')
 
     async def list(self) -> list[str]:
